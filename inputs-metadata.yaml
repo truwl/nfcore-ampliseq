@@ -1,0 +1,877 @@
+parameter_meta:
+  ampliseq.samplesheet:
+    description: Either a tab-seperated sample sheet, a fasta file, or a folder containing
+      zipped FastQ files
+    group: main_arguments
+    help: "Points to the main pipeline input, one of the following:\n- folder containing\
+      \ compressed fastq files\n- sample sheet ending with `.tsv` that points towards\
+      \ compressed fastq files\n- fasta file ending with `.fasta`, `.fna` or `.fa`\
+      \ that will be taxonomically classified\n\nRelated parameters are:\n- `--pacbio`\
+      \ and `--iontorrent` if the sequencing data is PacBio data or IonTorrent data\
+      \ (default expected: paired-end Illumina data)\n- `--single_end` if the sequencing\
+      \ data is single-ended Illumina data (default expected: paired-end Illumina\
+      \ data)\n- `--multiple_sequencing_runs` (folder input only) if the sequencing\
+      \ data originates from multiple sequencing runs\n- `--extension` (folder input\
+      \ only) if the sequencing file names do not follow the default (`\"/*_R{1,2}_001.fastq.gz\"\
+      `)\n- `--dada_ref_taxonomy` and `--qiime_ref_taxonomy` to choose an appropriate\
+      \ reference taxonomy for the type of amplicon (16S/18S/ITS) (default: 16S rRNA\
+      \ sequence database)\n\n##### Folder containing zipped FastQ files\n\nFor example:\n\
+      \n```bash\n--input 'path/to/data'\n```\n\nExample for input data organization\
+      \ from one sequencing run with two samples, paired-end data:\n\n```bash\ndata\n\
+      \  \u251C\u2500sample1_1_L001_R1_001.fastq.gz\n  \u251C\u2500sample1_1_L001_R2_001.fastq.gz\n\
+      \  \u251C\u2500sample2_1_L001_R1_001.fastq.gz\n  \u2514\u2500sample2_1_L001_R2_001.fastq.gz\n\
+      ```\n\nPlease note the following requirements:\n\n1. The path must be enclosed\
+      \ in quotes\n2. The folder must contain gzip compressed demultiplexed fastq\
+      \ files. If the file names do not follow the default (`\"/*_R{1,2}_001.fastq.gz\"\
+      `), please check `--extension`.\n3. Sample identifiers are extracted from file\
+      \ names, i.e. the string before the first underscore `_`, these must be unique\n\
+      4. If your data is scattered, produce a sample sheet\n5. All sequencing data\
+      \ should originate from one sequencing run, because processing relies on run-specific\
+      \ error models that are unreliable when data from several sequencing runs are\
+      \ mixed. Sequencing data originating from multiple sequencing runs requires\
+      \ additionally the parameter `--multiple_sequencing_runs` and a specific folder\
+      \ structure.\n\n##### Sample sheet\n\nThe sample sheet file is an alternative\
+      \ way to provide input reads, it must be a tab-separated file ending with `.tsv`\
+      \ that must have two to four columns with the following headers: \n- `sampleID`\
+      \ (required): Unique sample identifiers, any unique string (may not contain\
+      \ dots `.`, must not start with a number when using metadata)\n- `forwardReads`\
+      \ (required): Paths to (forward) reads zipped FastQ files\n- `reverseReads`\
+      \ (optional): Paths to reverse reads zipped FastQ files, required if the data\
+      \ is paired-end\n- `run` (optional): If the data was produced by multiple sequencing\
+      \ runs, any string\n\nFor example:\n\n```bash\n--input 'path/to/samplesheet.tsv'\n\
+      ```\n\n##### Fasta file\n\nWhen pointing at a file ending with `.fasta`, `.fna`\
+      \ or `.fa`, the containing sequences will be taxonomically classified. All other\
+      \ pipeline steps will be skipped.\n\nThis can be used to taxonomically classify\
+      \ previously produced ASV/OTU sequences.\n\nFor example:\n\n```bash\n--input\
+      \ 'path/to/amplicon_sequences.fasta'\n```"
+    hidden: false
+  ampliseq.FW_primer:
+    description: Forward primer sequence
+    group: main_arguments
+    help: 'In amplicon sequencing methods, PCR with specific primers produces the
+      amplicon of interest. These primer sequences need to be trimmed from the reads
+      before further processing and are also required for producing an appropriate
+      classifier. Do not use here any technical sequence such as adapter sequences
+      but only the primer sequence that matches the biological amplicon.
+
+
+      For example:
+
+
+      ```bash
+
+      --FW_primer "GTGYCAGCMGCCGCGGTAA" --RV_primer "GGACTACNVGGGTWTCTAAT"
+
+      ```'
+    hidden: false
+  ampliseq.RV_primer:
+    description: Reverse primer sequence
+    group: main_arguments
+    help: 'In amplicon sequencing methods, PCR with specific primers produces the
+      amplicon of interest. These primer sequences need to be trimmed from the reads
+      before further processing and are also required for producing an appropriate
+      classifier. Do not use here any technical sequence such as adapter sequences
+      but only the primer sequence that matches the biological amplicon.
+
+
+      For example:
+
+
+      ```bash
+
+      --FW_primer GTGYCAGCMGCCGCGGTAA --RV_primer GGACTACNVGGGTWTCTAAT
+
+      ```'
+    hidden: false
+  ampliseq.metadata:
+    description: Path to metadata sheet, when missing most downstream analysis are
+      skipped (barplots, PCoA plots, ...).
+    group: main_arguments
+    help: 'This is optional, but for performing downstream analysis such as barplots,
+      diversity indices or differential abundance testing, a metadata file is essential.
+
+
+      Related parameter:
+
+      - `--metadata_category` (optional) to choose columns that are used for testing
+      significance
+
+
+      For example:
+
+
+      ```bash
+
+      --metadata "path/to/metadata.tsv"
+
+      ```
+
+
+      Please note the following requirements:
+
+
+      1. The path must be enclosed in quotes
+
+      2. The metadata file has to follow the QIIME2 specifications (https://docs.qiime2.org/2021.2/tutorials/metadata/)
+
+
+      The first column in the tab-separated metadata file is the sample identifier
+      column (required header: `ID`) and defines the sample or feature IDs associated
+      with your study. Metadata files are not required to have additional metadata
+      columns, so a file containing only an ID column is a valid QIIME 2 metadata
+      file. Additional columns defining metadata associated with each sample or feature
+      ID are optional.
+
+      **NB**: without additional columns there might be no groupings for the downstream
+      analyses.
+
+
+      Sample identifiers should be 36 characters long or less, and also contain only
+      ASCII alphanumeric characters (i.e. in the range of [a-z], [A-Z], or [0-9]),
+      or the dash (-) character. For downstream analysis, by default all numeric columns,
+      blanks or NA are removed, and only columns with multiple different values but
+      not all unique are selected.
+
+
+      The columns which are to be assessed can be specified by `--metadata_category`.
+      If `--metadata_category` isn''t specified than all columns that fit the specification
+      are automatically chosen.'
+    hidden: false
+  ampliseq.pacbio:
+    description: If data is single-ended PacBio reads instead of Illumina
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.iontorrent:
+    description: If data is single-ended IonTorrent reads instead of Illumina
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.single_end:
+    description: If data is single-ended Illumina reads instead of paired-end
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.cut_its:
+    description: If data is long read ITS sequences, that need to be cut to ITS region
+      only for taxonomy assignment
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.multiple_sequencing_runs:
+    description: If samples were sequenced in multiple sequencing runs
+    group: other_input_output_options
+    help: "Expects one sub-folder per sequencing run in the folder specified by `--input`\
+      \ containing sequencing data of the specific run.\nSample identifiers are taken\
+      \ from sequencing files, specifically the string before the first underscore\
+      \ will be the sample ID. Sample IDs across all sequencing runs (all sequencing\
+      \ files) have to be unique. If this is not the case, please use a sample sheet\
+      \ as input instead.\n\nExample for input data organization:\n\n```bash\ndata\n\
+      \  |-run1\n  |  |-sample1_1_L001_R1_001.fastq.gz\n  |  |-sample1_1_L001_R2_001.fastq.gz\n\
+      \  |  |-sample2_1_L001_R1_001.fastq.gz\n  |  |-sample2_1_L001_R2_001.fastq.gz\n\
+      \  |\n  |-run2\n     |-sample3_1_L001_R1_001.fastq.gz\n     |-sample3_1_L001_R2_001.fastq.gz\n\
+      \     |-sample4_1_L001_R1_001.fastq.gz\n     |-sample4_1_L001_R2_001.fastq.gz\n\
+      ```\n\nExample command to analyze this data in one pipeline run:\n\n```bash\n\
+      nextflow run nf-core/ampliseq \\\n    -profile singularity \\\n    --input \"\
+      data\" \\\n    --FW_primer \"GTGYCAGCMGCCGCGGTAA\" \\\n    --RV_primer \"GGACTACNVGGGTWTCTAAT\"\
+      \ \\\n    --metadata \"data/Metadata.tsv\" \\\n    --multiple_sequencing_runs\n\
+      ```"
+    hidden: false
+  ampliseq.illumina_pe_its:
+    description: If analysing ITS amplicons or any other region with large length
+      variability with Illumina paired end reads
+    group: other_input_output_options
+    help: 'This will cause the pipeline to
+
+      - not truncate input reads if not `--trunclenf` and `--trunclenr` are overwriting
+      defaults
+
+      - remove reverse complement primers from the end of reads in case the read length
+      exceeds the amplicon length'
+    hidden: false
+  ampliseq.concatenate_reads:
+    description: 'Not recommended: When paired end reads are not sufficiently overlapping
+      for merging.'
+    group: other_input_output_options
+    help: 'This parameters specifies that paired-end reads are not merged after denoising
+      but concatenated (separated by 10 N''s). This is of advantage when an amplicon
+      was sequenced that is too long for merging (i.e. bad experimental design). This
+      is an alternative to only analyzing the forward or reverse read in case of non-overlapping
+      paired-end sequencing data.
+
+
+      **This parameter is not recommended! Only if all other options fail.**'
+    hidden: false
+  ampliseq.sample_inference:
+    description: 'Mode of sample inference: "independent", "pooled" or "pseudo"'
+    group: other_input_output_options
+    help: If samples are treated independent (lowest sensitivity and lowest resources),
+      pooled (highest sensitivity and resources) or pseudo-pooled (balance between
+      required resources and sensitivity).
+    hidden: false
+  ampliseq.metadata_category:
+    description: Comma separated list of metadata column headers for statistics.
+    group: other_input_output_options
+    help: 'Here columns in the metadata sheet can be chosen with groupings that are
+      used for diversity indices and differential abundance analysis. By default,
+      all suitable columns in the metadata sheet will be used if this option is not
+      specified. Suitable are columns which are categorical (not numerical) and have
+      multiple different values which are not all unique. For example:
+
+
+      ```bash
+
+      --metadata_category "treatment1,treatment2"
+
+      ```
+
+
+      Please note the following requirements:
+
+
+      1. Comma separated list enclosed in quotes
+
+      2. May not contain whitespace characters
+
+      3. Each comma separated term has to match exactly one column name in the metadata
+      sheet'
+    hidden: false
+  ampliseq.qiime_adonis_formula:
+    description: Formula for QIIME2 ADONIS metadata feature importance test for beta
+      diversity distances
+    group: other_input_output_options
+    help: 'Model formula containing only independent terms contained in the sample
+      metadata. These can be continuous variables or factors, and they can have interactions
+      as in a typical R formula. Essentially, columns in the metadata sheet can be
+      chosen that have no empty values, not only unique values, or not only identical
+      values.
+
+      For example, "treatment1+treatment2" tests whether the data partitions based
+      on "treatment1" and "treatment2" sample metadata. "treatment1*treatment2" test
+      both of those effects as well as their interaction.
+
+      More examples can be found in the R documentation, https://cran.r-project.org/doc/manuals/r-release/R-intro.html#Formulae-for-statistical-models'
+    hidden: false
+  ampliseq.extension:
+    description: Naming of sequencing files
+    group: other_input_output_options
+    help: 'Indicates the naming of sequencing files (default: `"/*_R{1,2}_001.fastq.gz"`).
+
+
+      Please note:
+
+
+      1. The prepended slash (`/`) is required
+
+      2. The star (`*`) is the required wildcard for sample names
+
+      3. The curly brackets (`{}`) enclose the orientation for paired end reads, seperated
+      by a comma (`,`).
+
+      4. The pattern must be enclosed in quotes
+
+
+      For example for one sample (name: `1`) with forward (file: `1_a.fastq.gz`) and
+      reverse (file: `1_b.fastq.gz`) reads in folder `data`:
+
+
+      ```bash
+
+      --input "data" --extension "/*_{a,b}.fastq.gz"
+
+      ```'
+    hidden: false
+  ampliseq.picrust:
+    description: If the functional potential of the bacterial community is predicted.
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.sbdiexport:
+    description: If data should be exported in SBDI (Swedish biodiversity infrastructure)
+      Excel format.
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.outdir:
+    description: Path to the output directory where the results will be saved.
+    group: other_input_output_options
+    help: ''
+    hidden: false
+  ampliseq.email:
+    description: Email address for completion summary.
+    group: other_input_output_options
+    help: Set this parameter to your e-mail address to get a summary e-mail with details
+      of the run sent to you when the workflow exits. If set in your user config file
+      (`~/.nextflow/config`) then you don't need to specify this on the command line
+      for every run.
+    hidden: false
+  ampliseq.retain_untrimmed:
+    description: Cutadapt will retain untrimmed reads, choose only if input reads
+      are not expected to contain primer sequences.
+    group: cutoffs
+    help: 'When read sequences are trimmed, untrimmed read pairs are discarded routinely.
+      Use this option to retain untrimmed read pairs. This is usually not recommended
+      and is only of advantage for specific protocols that prevent sequencing PCR
+      primers. '
+    hidden: false
+  ampliseq.double_primer:
+    description: Cutadapt will be run twice to ensure removal of potential double
+      primers
+    group: cutoffs
+    help: Cutdapt will be run twice, first to remove reads without primers (default),
+      then a second time to remove reads that erroneously contain a second set of
+      primers, not to be used with `--retain_untrimmed`.
+    hidden: false
+  ampliseq.trunclenf:
+    description: DADA2 read truncation value for forward strand, set this to 0 for
+      no truncation
+    group: cutoffs
+    help: 'Read denoising by DADA2 creates an error profile specific to a sequencing
+      run and uses this to correct sequencing errors. This method prefers when all
+      reads to have the same length and as high quality as possible while maintaining
+      at least 20 bp overlap for merging. One cutoff for the forward read `--trunclenf`
+      and one for the reverse read `--trunclenr` truncate all longer reads at that
+      position and drop all shorter reads.
+
+      If not set, these cutoffs will be determined automatically for the position
+      before the mean quality score drops below `--trunc_qmin`.
+
+
+      For example:
+
+
+      ```bash
+
+      --trunclenf 180 --trunclenr 120
+
+      ```
+
+
+      Please note:
+
+
+      1. Overly aggressive truncation might lead to insufficient overlap for read
+      merging
+
+      2. Too little truncation might reduce denoised reads
+
+      3. The code choosing these values automatically cannot take the points above
+      into account, therefore checking read numbers is essential'
+    hidden: false
+  ampliseq.trunclenr:
+    description: DADA2 read truncation value for reverse strand, set this to 0 for
+      no truncation
+    group: cutoffs
+    help: 'Read denoising by DADA2 creates an error profile specific to a sequencing
+      run and uses this to correct sequencing errors. This method prefers when all
+      reads to have the same length and as high quality as possible while maintaining
+      at least 20 bp overlap for merging. One cutoff for the forward read `--trunclenf`
+      and one for the reverse read `--trunclenr` truncate all longer reads at that
+      position and drop all shorter reads.
+
+      If not set, these cutoffs will be determined automatically for the position
+      before the mean quality score drops below `--trunc_qmin`.
+
+
+      For example:
+
+
+      ```bash
+
+      --trunclenf 180 --trunclenr 120
+
+      ```
+
+
+      Please note:
+
+
+      1. Overly aggressive truncation might lead to insufficient overlap for read
+      merging
+
+      2. Too little truncation might reduce denoised reads
+
+      3. The code choosing these values automatically cannot take the points above
+      into account, therefore checking read numbers is essential'
+    hidden: false
+  ampliseq.trunc_qmin:
+    description: If --trunclenf and --trunclenr are not set, these values will be
+      automatically determined using this median quality score
+    group: cutoffs
+    help: 'Automatically determine `--trunclenf` and `--trunclenr` before the median
+      quality score drops below `--trunc_qmin`. The fraction of reads retained is
+      defined by `--trunc_rmin`, which might override the quality cutoff.
+
+
+      For example:
+
+
+      ```bash
+
+      --trunc_qmin 35
+
+      ```
+
+
+      Please note:
+
+
+      1. The code choosing `--trunclenf` and `--trunclenr` using `--trunc_qmin` automatically
+      cannot take amplicon length or overlap requirements for merging into account,
+      therefore use with caution.
+
+      2. A minimum value of 25 is recommended. However, high quality data with a large
+      paired sequence overlap might justify a higher value (e.g. 35). Also, very low
+      quality data might require a lower value.
+
+      3. If the quality cutoff is too low to include a certain fraction of reads that
+      is specified by `--trunc_rmin` (e.g. 0.75 means at least 75% percent of reads
+      are retained), a lower cutoff according to `--trunc_rmin` superseeds the quality
+      cutoff.'
+    hidden: false
+  ampliseq.trunc_rmin:
+    description: Assures that values chosen with --trunc_qmin will retain a fraction
+      of reads.
+    group: cutoffs
+    help: Value can range from 0 to 1. 0 means no reads need to be retained and 1
+      means all reads need to be retained. The minimum lengths of --trunc_qmin and
+      --trunc_rmin are chosen as DADA2 cutoffs.
+    hidden: false
+  ampliseq.max_ee:
+    description: DADA2 read filtering option
+    group: cutoffs
+    help: 'After truncation, reads with higher than `max_ee` "expected errors" will
+      be discarded. In case of very long reads, you might want to increase this value.  We
+      recommend (to start with) a value corresponding to approximately 1 expected
+      error per 100-200 bp (default: 2)'
+    hidden: false
+  ampliseq.max_len:
+    description: DADA2 read filtering option
+    group: cutoffs
+    help: Remove reads with length greater than `max_len` after trimming and truncation.
+      Must be a positive integer.
+    hidden: false
+  ampliseq.min_len:
+    description: DADA2 read filtering option
+    group: cutoffs
+    help: Remove reads with length less than `min_len` after trimming and truncation.
+    hidden: false
+  ampliseq.dada_tax_agglom_min:
+    description: Minimum taxonomy agglomeration level for DADA2 classification
+    group: cutoffs
+    help: Depends on the reference taxonomy database used.
+    hidden: false
+  ampliseq.dada_tax_agglom_max:
+    description: Maximum taxonomy agglomeration level for DADA2 classification
+    group: cutoffs
+    help: Depends on the reference taxonomy database used. Default databases should
+      have genus level at 7.
+    hidden: false
+  ampliseq.qiime_tax_agglom_min:
+    description: Minimum taxonomy agglomeration level for QIIME2 classification
+    group: cutoffs
+    help: Depends on the reference taxonomy database used.
+    hidden: false
+  ampliseq.qiime_tax_agglom_max:
+    description: Maximum taxonomy agglomeration level for QIIME2 classification
+    group: cutoffs
+    help: Depends on the reference taxonomy database used. Default databases should
+      have genus level at 6.
+    hidden: false
+  ampliseq.dada_ref_taxonomy:
+    description: Name of supported database, and optionally also version number
+    group: taxonomic_database
+    help: 'Choose any of the supported databases, and optionally also specify the
+      version. Database and version are separated by an equal sign (`=`, e.g. `silva=138`)
+      . This will download the desired database, format it to produce a file that
+      is compatible with DADA2''s assignTaxonomy and another file that is compatible
+      with DADA2''s addSpecies.
+
+
+      The following databases are supported:
+
+      - GTDB - Genome Taxonomy Database - 16S rRNA
+
+      - PR2 - Protist Reference Ribosomal Database - 18S rRNA
+
+      - RDP - Ribosomal Database Project  - 16S rRNA
+
+      - SILVA ribosomal RNA gene database project  - 16S rRNA
+
+      - UNITE - eukaryotic nuclear ribosomal ITS region  - ITS
+
+
+      Generally, using `gtdb`, `pr2`, `rdp`, `sbdi-gtdb`, `silva`, `unite-fungi`,
+      or `unite-alleuk` will select the most recent supported version. For details
+      on what values are valid, please either use an invalid value such as `x` (causing
+      the pipeline to send an error message with a list of all valid values) or see
+      `conf/ref_databases.config`.
+
+
+      Please note that commercial/non-academic entities [require licensing](https://www.arb-silva.de/silva-license-information)
+      for SILVA v132 database (non-default) but not from v138 on (default).'
+    hidden: false
+  ampliseq.cut_dada_ref_taxonomy:
+    description: If the expected amplified sequences are extracted from the DADA2
+      reference taxonomy database
+    group: taxonomic_database
+    help: Expected amplified sequences are extracted from the DADA2 reference taxonomy
+      using the primer sequences, that might improve classification. This is not applied
+      to species classification (assignSpecies) but only for lower taxonomic levels
+      (assignTaxonomy).
+    hidden: false
+  ampliseq.qiime_ref_taxonomy:
+    description: Name of supported database, and optionally also version number
+    group: taxonomic_database
+    help: 'Choose any of the supported databases, and optionally also specify the
+      version. Database and version are separated by an equal sign (`=`, e.g. `silva=138`)
+      . This will download the desired database and initiate taxonomic classification
+      with QIIME2 and the chosen database.
+
+
+      If both, `--dada_ref_taxonomy` and `--qiime_ref_taxonomy` are used, DADA2 classification
+      will be used for downstream analysis.
+
+
+      The following databases are supported:
+
+      - SILVA ribosomal RNA gene database project - 16S rRNA
+
+      - UNITE - eukaryotic nuclear ribosomal ITS region - ITS
+
+      - Greengenes (only testing!)
+
+
+      Generally, using `silva`, `unite-fungi`, or `unite-alleuk` will select the most
+      recent supported version. For testing purposes, the tiny database `greengenes85`
+      (dereplicated at 85% sequence similarity) is available. For details on what
+      values are valid, please either use an invalid value such as `x` (causing the
+      pipeline to send an error message with all valid values) or see `conf/ref_databases.config`.'
+    hidden: false
+  ampliseq.classifier:
+    description: Path to QIIME2 trained classifier file (typically *-classifier.qza)
+    group: taxonomic_database
+    help: "If you have trained a compatible classifier before, from sources such as\
+      \ SILVA (https://www.arb-silva.de/), Greengenes (http://greengenes.secondgenome.com/downloads)\
+      \ or RDP (https://rdp.cme.msu.edu/). \n\nFor example:\n\n```bash\n--classifier\
+      \ \"FW_primer-RV_primer-classifier.qza\"\n```\n\nPlease note the following requirements:\n\
+      \n1. The path must be enclosed in quotes\n2. The classifier is a Naive Bayes\
+      \ classifier produced by `qiime feature-classifier fit-classifier-naive-bayes`\
+      \ (e.g. by this pipeline)\n3. The primer pair for the amplicon PCR and the computing\
+      \ of the classifier are exactly the same (or full-length, potentially lower\
+      \ performance)\n4. The classifier has to be trained by the same version of scikit-learn\
+      \ as this version of the pipeline uses"
+    hidden: false
+  ampliseq.ignore_empty_input_files:
+    description: Ignore input files considered too small (<1KB) for individual samples
+      and continue the pipeline without those samples.
+    group: filtering
+    help: ''
+    hidden: false
+  ampliseq.ignore_failed_trimming:
+    description: Ignore files considered too small (<1KB) after trimming and continue
+      the pipeline without those samples.
+    group: filtering
+    help: ''
+    hidden: false
+  ampliseq.exclude_taxa:
+    description: Comma separated list of unwanted taxa, to skip taxa filtering use
+      "none"
+    group: filtering
+    help: 'Depending on the primers used, PCR might amplify unwanted or off-target
+      DNA. By default sequences originating from mitochondria or chloroplasts are
+      removed. The taxa specified are excluded from further analysis.
+
+      For example to exclude any taxa that contain mitochondria, chloroplast, or archaea:
+
+
+      ```bash
+
+      --exclude_taxa "mitochondria,chloroplast,archaea"
+
+      ```
+
+
+      If you prefer not filtering the data, specify:
+
+
+      ```bash
+
+      --exclude_taxa "none"
+
+      ```
+
+
+      Please note the following requirements:
+
+
+      1. Comma separated list enclosed in quotes
+
+      2. May not contain whitespace characters
+
+      3. Features that contain one or several of these terms in their taxonomical
+      classification are excluded from further analysis
+
+      4. The taxonomy level is not taken into consideration'
+    hidden: false
+  ampliseq.min_frequency:
+    description: Abundance filtering
+    group: filtering
+    help: 'Remove entries from the feature table below an absolute abundance threshold
+      (default: 1, meaning filter is disabled). Singletons are often regarded as artifacts,
+      choosing a value of 2 removes sequences with less than 2 total counts from the
+      feature table.
+
+
+      For example to remove singletons choose:
+
+
+      ```bash
+
+      --min_frequency 2
+
+      ```'
+    hidden: false
+  ampliseq.min_samples:
+    description: Prevalence filtering
+    group: filtering
+    help: 'Filtering low prevalent features from the feature table, e.g. keeping only
+      features that are present in at least two samples can be achived by choosing
+      a value of 2 (default: 1, meaning filter is disabled). Typically only used when
+      having replicates for all samples.
+
+
+      For example to retain features that are present in at least two sample:
+
+
+      ```bash
+
+      --min_samples 2
+
+      ```
+
+
+      Please note this is independent of abundance.'
+    hidden: false
+  ampliseq.skip_fastqc:
+    description: Skip FastQC
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_qiime:
+    description: Skip all steps that are executed by QIIME2, including QIIME2 software
+      download, taxonomy assignment by QIIME2, barplots, relative abundance tables,
+      diversity analysis, differential abundance testing.
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_taxonomy:
+    description: Skip taxonomic classification. Incompatible with `--sbdiexport`
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_dada_addspecies:
+    description: Skip species level when using DADA2 for taxonomic classification.
+      This reduces the required memory dramatically under certain conditions. Incompatible
+      with `--sbdiexport`
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_barplot:
+    description: Skip producing barplot
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_abundance_tables:
+    description: Skip producing any relative abundance tables
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_alpha_rarefaction:
+    description: Skip alpha rarefaction
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_diversity_indices:
+    description: Skip alpha and beta diversity analysis
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_ancom:
+    description: Skip differential abundance testing
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.skip_multiqc:
+    description: Skip MultiQC reporting
+    group: skipping_specific_steps
+    help: ''
+    hidden: false
+  ampliseq.custom_config_version:
+    description: Git commit id for Institutional configs.
+    group: institutional_config_options
+    help: ''
+    hidden: true
+  ampliseq.custom_config_base:
+    description: Base directory for Institutional configs.
+    group: institutional_config_options
+    help: If you're running offline, Nextflow will not be able to fetch the institutional
+      config files from the internet. If you don't need them, then this is not a problem.
+      If you do need them, you should download the files from the repo and tell Nextflow
+      where to find them with this parameter.
+    hidden: true
+  ampliseq.config_profile_name:
+    description: Institutional config name.
+    group: institutional_config_options
+    help: ''
+    hidden: true
+  ampliseq.config_profile_description:
+    description: Institutional config description.
+    group: institutional_config_options
+    help: ''
+    hidden: true
+  ampliseq.config_profile_contact:
+    description: Institutional config contact information.
+    group: institutional_config_options
+    help: ''
+    hidden: true
+  ampliseq.config_profile_url:
+    description: Institutional config URL link.
+    group: institutional_config_options
+    help: By default, parameters set as _hidden_ in the schema are not shown on the
+      command line when a user runs with `--help`. Specifying this option will tell
+      the pipeline to show all parameters.
+    hidden: true
+  ampliseq.multiqc_title:
+    description: MultiQC report title. Printed as page header, used for filename if
+      not otherwise specified.
+    group: institutional_config_options
+    help: ''
+    hidden: true
+  ampliseq.help:
+    description: Display help text.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.email_on_fail:
+    description: Email address for completion summary, only when pipeline fails.
+    group: generic_options
+    help: An email address to send a summary email to when the pipeline is completed
+      - ONLY sent if the pipeline does not exit successfully.
+    hidden: true
+  ampliseq.plaintext_email:
+    description: Send plain-text email instead of HTML.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.max_multiqc_email_size:
+    description: File size limit when attaching MultiQC reports to summary emails.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.monochrome_logs:
+    description: Do not use coloured log outputs.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.multiqc_config:
+    description: Custom config file to supply to MultiQC.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.tracedir:
+    description: Directory to keep pipeline Nextflow logs and reports.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.validate_params:
+    description: Boolean whether to validate parameters against the schema at runtime
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.show_hidden_params:
+    description: Show all params when using `--help`
+    group: generic_options
+    help: By default, parameters set as _hidden_ in the schema are not shown on the
+      command line when a user runs with `--help`. Specifying this option will tell
+      the pipeline to show all parameters.
+    hidden: true
+  ampliseq.enable_conda:
+    description: Run this workflow with Conda. You can also use '-profile conda' instead
+      of providing this parameter.
+    group: generic_options
+    help: ''
+    hidden: true
+  ampliseq.max_cpus:
+    description: Maximum number of CPUs that can be requested    for any single job.
+    group: max_job_request_options
+    help: Use to set an upper-limit for the CPU requirement for each process. Should
+      be an integer e.g. `--max_cpus 1`
+    hidden: true
+  ampliseq.max_memory:
+    description: Maximum amount of memory that can be requested for any single job.
+    group: max_job_request_options
+    help: Use to set an upper-limit for the memory requirement for each process. Should
+      be a string in the format integer-unit e.g. `--max_memory '8.GB'`
+    hidden: true
+  ampliseq.max_time:
+    description: Maximum amount of time that can be requested for any single job.
+    group: max_job_request_options
+    help: Use to set an upper-limit for the time requirement for each process. Should
+      be a string in the format integer-unit e.g. `--max_time '2.h'`
+    hidden: true
+parameter_group:
+  main_arguments:
+    description: ''
+    help: null
+    title: Main arguments
+  other_input_output_options:
+    description: Define where the pipeline should find input data and save output
+      data.
+    help: null
+    title: Other input/output options
+  cutoffs:
+    description: ''
+    help: null
+    title: Cutoffs
+  taxonomic_database:
+    description: ''
+    help: null
+    title: Taxonomic database
+  filtering:
+    description: ''
+    help: null
+    title: Filtering
+  skipping_specific_steps:
+    description: ''
+    help: null
+    title: Skipping specific steps
+  institutional_config_options:
+    description: Parameters used to describe centralised config profiles. These should
+      not be edited.
+    help: The centralised nf-core configuration profiles use a handful of pipeline
+      parameters to describe themselves. This information is then printed to the Nextflow
+      log when you run a pipeline. You should not need to change these values when
+      you run a pipeline.
+    title: Institutional config options
+  generic_options:
+    description: Less common options for the pipeline, typically set in a config file.
+    help: 'These options are common to all nf-core pipelines and allow you to customise
+      some of the core preferences for how the pipeline runs.
+
+
+      Typically these options would be set in a Nextflow config file loaded for all
+      pipeline runs, such as `~/.nextflow/config`.'
+    title: Generic options
+  max_job_request_options:
+    description: Set the top limit for requested resources for any single job.
+    help: 'If you are running on a smaller system, a pipeline step requesting more
+      resources than are available may cause the Nextflow to stop the run with an
+      error. These options allow you to cap the maximum resources requested by any
+      single job so that the pipeline will run on your system.
+
+
+      Note that you can not _increase_ the resources requested by any job using these
+      options. For that you will need your own configuration file. See [the nf-core
+      website](https://nf-co.re/usage/configuration) for details.'
+    title: Max job request options
