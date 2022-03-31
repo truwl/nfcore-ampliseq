@@ -1,6 +1,6 @@
 name: nf.core ampliseq
 identifier: WF_d2f081.23
-description: 16S rRNA amplicon sequencing analysis workflow using QIIME2
+description: Amplicon sequencing analysis workflow using DADA2 and QIIME2
 softwareVersion:
   versionName: 2.2.0
 metadataStatus: Released
